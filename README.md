@@ -1,7 +1,7 @@
 # \[Hvad skal der ske\]
 
 **Group members:**
-- Hjorten
+- Hjorten (ham den grimme)
 - Krisser(ham den flotte)
 
 This repository contains  
