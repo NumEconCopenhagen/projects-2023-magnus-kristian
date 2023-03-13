@@ -2,7 +2,7 @@
 
 **Group members:**
 - Hjorten
-- Krisser
+- Krisser(ham den flotte)
 
 This repository contains  
 1. Inaugural project. 
