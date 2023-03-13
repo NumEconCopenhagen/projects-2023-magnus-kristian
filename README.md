@@ -1,9 +1,8 @@
-# \[Group name\]
+# \[Dream team\]
 
 **Group members:**
-- A
-- B
-- C
+- Hjorten
+- Krisser
 
 This repository contains  
 1. Inaugural project. 
