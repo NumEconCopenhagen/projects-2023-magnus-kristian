@@ -1,7 +1,7 @@
 # \[Hvad skal der ske\]
 
 **Group members:**
-- Hjorten (fejfe)
+- Hjorten (blabla)
 - Krisser()
 
 This repository contains  
