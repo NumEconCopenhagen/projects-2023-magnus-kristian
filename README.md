@@ -1,8 +1,8 @@
 # \[Hvad skal der ske\]
 
 **Group members:**
-- Hjorten (ham med den dffd tisser)
-- Krisser(ham med den lille tisser)
+- Hjorten (fejfe)
+- Krisser()
 
 This repository contains  
 1. Inaugural project. 
