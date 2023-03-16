@@ -3,6 +3,7 @@
 **Group members:**
 - Hjorten (blabla)
 - Krisser()
+- Kristian Vest ()
 
 
 Hej
