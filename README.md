@@ -1,11 +1,10 @@
 # \[Hvad skal der ske\]
 
 **Group members:**
-- Hjorten (ham den grimme)
-- Krisser(ham den flotte)
+- Magnus Hjort
+- Kristian Ebdrup
+- Kristian Vest
 
-
-Hej
 
 This repository contains  
 1. Inaugural project. 
