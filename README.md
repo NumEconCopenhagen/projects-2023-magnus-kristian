@@ -1,9 +1,9 @@
 # \[Hvad skal der ske\]
 
 **Group members:**
-- Hjorten (blabla)
-- Krisser()
-- Kristian Vest ()
+- Magnus Hjort
+- Kristian Ebdrup
+- Kristian Vest
 
 
 This repository contains  
