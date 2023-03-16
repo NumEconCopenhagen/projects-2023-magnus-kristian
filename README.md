@@ -1,7 +1,7 @@
 # \[Hvad skal der ske\]
 
 **Group members:**
-- Hjorten (ham med den ddddd tisser)
+- Hjorten (ham med den dd tisser)
 - Krisser(ham med den lille tisser)
 
 This repository contains  
