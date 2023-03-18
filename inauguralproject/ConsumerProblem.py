@@ -110,8 +110,40 @@ class HouseholdSpecializationModelClass:
 
     def solve(self,do_print=False):
         """ solve model continously """
+        par = self.par
+        sol = self.sol 
+        opt = SimpleNamespace()
+        
+        # a. guesses:
+        #LM,HM,LF,HF
+        LM_guess=5
+        HM_guess=5
+        LF_guess=5
+        HF_guess=5
+        x_guess=[LM_guess,HM_guess,LF_guess,HF_guess]
 
-        pass    
+        # b. creating objective 
+        obj = lambda x: -self.calc_utility(x[0],x[1],x[2],x[3])
+        #time_constraint = lambda x: x[0]+x[1]-24 + x[2]+x[3]-24
+        #constraints = ({'type':'ineq','fun':time_constraint})
+
+        # c. creating bounds
+        bounds=((1e-8,24-1e-8),(1e-8,24-1e-8),(1e-8,24-1e-8),(1e-8,24-1e-8))
+        #res = optimize.minimize(obj,x_guess,method='SLSQP',bounds=bounds,constraints=constraints)
+        
+        # d. creating result element and extracting values from it
+        res = optimize.minimize(obj,x_guess,method='Nelder-Mead',bounds=bounds) 
+        opt.LM = res.x[0]
+        opt.HM = res.x[1]
+        opt.LF = res.x[2]
+        opt.HF = res.x[3]
+
+        # e. print
+        if do_print:
+            for k,v in opt.__dict__.items():
+                print(f'{k} = {v:6.4f}')
+
+        return opt   
 
     def solve_wF_vec(self,discrete=False):
         """ solve model for vector of female wages """
