@@ -43,6 +43,9 @@ class HouseholdSpecializationModelClass:
         sol.beta0 = np.nan
         sol.beta1 = np.nan
 
+        sol.alpha = np.nan
+        sol.sigma = np.nan
+
     def calc_utility(self,LM,HM,LF,HF):
         """ calculate utility """
 
@@ -150,10 +153,22 @@ class HouseholdSpecializationModelClass:
         par = self.par
         sol = self.sol  
         opt = SimpleNamespace()
-                    
-        for i,wF in enumerate(self.par.wF_vec):
+
+        par.wF_vec=np.linspace(0.8,1.2,5)
+        ny_array=np.linspace(0,100,5)            
+        for i,wF in enumerate(par.wF_vec):
             self.par.wF = wF
-    
+            ny_array[i]+=wF
+        return ny_array
+
+    def solve_wF_vec(self,discrete=False):
+        """ solve model for vector of female wages """
+        par = self.par
+        sol = self.sol
+           
+        for i,wF in enumerate(par.wF_vec): 
+            self.par.wF = wF  
+
             # a. guesses:
             #LM,HM,LF,HF
             LM_guess=5
@@ -174,13 +189,10 @@ class HouseholdSpecializationModelClass:
             # d. creating result element and extracting values from it
             res = optimize.minimize(obj,x_guess,method='Nelder-Mead',bounds=bounds) 
             sol.LM_vec[i] = res.x[0]
-            sol.HM_vec = res.x[1]
-            sol.LF_vec = res.x[2]
-            sol.HF_vec = res.x[3]
-
-            return sol
-
-
+            sol.HM_vec[i] = res.x[1]
+            sol.LF_vec[i] = res.x[2]
+            sol.HF_vec[i] = res.x[3]
+        return sol
 
     def run_regression(self):
         """ run regression """
@@ -189,12 +201,44 @@ class HouseholdSpecializationModelClass:
         sol = self.sol
 
         x = np.log(par.wF_vec)
-        #y = np.log(sol.HF_vec/sol.HM_vec)
-        y = np.log(HF_vec/HM_vec)
+        y = np.log(sol.HF_vec/sol.HM_vec)
         A = np.vstack([np.ones(x.size),x]).T
         sol.beta0,sol.beta1 = np.linalg.lstsq(A,y,rcond=None)[0]
+        return sol
     
+
+    def calc_deviation(self,alpha,sigma):
+        par = self.par
+        sol = self.sol
+
+        par.alpha=alpha
+        par.sigma=sigma
+
+        self.solve_wF_vec()
+        self.run_regression()
+        test=(par.beta0_target-sol.beta0)**2+(par.beta1_target-sol.beta1)**2
+        return test
+
     def estimate(self,alpha=None,sigma=None):
         """ estimate alpha and sigma """
 
-        pass
+        par = self.par
+        sol = self.sol  
+
+        # a. guesses:
+        alpha_guess=0.5
+        sigma_guess=1
+
+        guess=[alpha_guess,sigma_guess]
+
+        # b. creating objective
+        obj= lambda x: self.calc_deviation(x[0],x[1]) 
+
+        # c. creating bounds
+        bounds=((1e-8,1-1e-8),(1e-8,3-1e-8))
+
+        # d. creating result element and extracting values from it
+        res = optimize.minimize(obj,guess,method='Nelder-Mead',bounds=bounds) 
+        sol.alpha = res.x[0]
+        sol.sigma = res.x[1]
+        return sol
