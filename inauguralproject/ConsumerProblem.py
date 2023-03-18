@@ -100,7 +100,7 @@ class HouseholdSpecializationModelClass:
         opt.HM = HM[j]
         opt.LF = LF[j]
         opt.HF = HF[j]
-
+        
         # e. print
         if do_print:
             for k,v in opt.__dict__.items():
