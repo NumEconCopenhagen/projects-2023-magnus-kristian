@@ -1,10 +1,10 @@
-from types import SimpleNamespace
-
 import numpy as np
 from scipy import optimize
 
 import pandas as pd 
 import matplotlib.pyplot as plt
+
+from types import SimpleNamespace
 
 class HouseholdSpecializationModelClass:
 
@@ -168,7 +168,7 @@ class HouseholdSpecializationModelClass:
             x_guess=[LM_guess,HM_guess,LF_guess,HF_guess]
 
             # b. creating objective 
-            obj = lambda x: -self.calc_utility(x[0],x[1],x[2],x[3])
+            obj = lambda x: -self.calc_utility(*x)
 
             # c. creating bounds
             bounds=((1e-8,24-1e-8),(1e-8,24-1e-8),(1e-8,24-1e-8),(1e-8,24-1e-8))
@@ -201,7 +201,6 @@ class HouseholdSpecializationModelClass:
         sol.beta0,sol.beta1 = np.linalg.lstsq(A,y,rcond=None)[0]
         return sol
     
-
     def calc_deviation(self,alpha,sigma):
         """ For a given alpha and sigma, returns squared deviation from realistic parameter values"""
         par = self.par
@@ -213,8 +212,10 @@ class HouseholdSpecializationModelClass:
 
         #b. For a given alpha and sigma simulate optimal household behavior
         self.solve_wF_vec()
+
         #c. For a given household behavior run regression to find beta_0 and beta_1
         self.run_regression()
+
         #d. For beta_0 and beta_1 calculate sq. dev. from target parameters
         test=(par.beta0_target-sol.beta0)**2+(par.beta1_target-sol.beta1)**2
         return test
@@ -231,7 +232,7 @@ class HouseholdSpecializationModelClass:
         guess=[alpha_guess,sigma_guess]
 
         # b. creating objective
-        obj= lambda x: self.calc_deviation(x[0],x[1]) 
+        obj= lambda x: self.calc_deviation(*x) 
 
         # c. creating bounds
         bounds=((1e-8,1-1e-8),(1e-8,3-1e-8))
