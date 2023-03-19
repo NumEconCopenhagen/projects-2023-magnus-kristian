@@ -47,7 +47,7 @@ class HouseholdSpecializationModelClass:
         sol.sigma = np.nan
 
     def calc_utility(self,LM,HM,LF,HF):
-        """ calculate utility """
+        """ calculate utility - - now supports sigma different from 1"""
 
         par = self.par
         sol = self.sol
@@ -55,7 +55,7 @@ class HouseholdSpecializationModelClass:
         # a. consumption of market goods
         C = par.wM*LM + par.wF*LF
 
-        # b. home production
+        # b. home production. par.sigma==0 is never required so it is skipped.
         if par.sigma== 1:
             H = HM**(1-par.alpha)*HF**par.alpha
         else:
@@ -127,11 +127,13 @@ class HouseholdSpecializationModelClass:
 
         # b. creating objective 
         obj = lambda x: -self.calc_utility(x[0],x[1],x[2],x[3])
-        #time_constraint = lambda x: x[0]+x[1]-24 + x[2]+x[3]-24
-        #constraints = ({'type':'ineq','fun':time_constraint})
 
         # c. creating bounds
         bounds=((1e-8,24-1e-8),(1e-8,24-1e-8),(1e-8,24-1e-8),(1e-8,24-1e-8))
+
+        # c.alternative: Uses SLSQP instead of Nelder-Mead to minimize function
+        #time_constraint = lambda x: x[0]+x[1]-24 + x[2]+x[3]-24
+        #constraints = ({'type':'ineq','fun':time_constraint})
         #res = optimize.minimize(obj,x_guess,method='SLSQP',bounds=bounds,constraints=constraints)
         
         # d. creating result element and extracting values from it
@@ -151,21 +153,9 @@ class HouseholdSpecializationModelClass:
     def solve_wF_vec(self,discrete=False):
         """ solve model for vector of female wages """
         par = self.par
-        sol = self.sol  
-        opt = SimpleNamespace()
-
-        par.wF_vec=np.linspace(0.8,1.2,5)
-        ny_array=np.linspace(0,100,5)            
-        for i,wF in enumerate(par.wF_vec):
-            self.par.wF = wF
-            ny_array[i]+=wF
-        return ny_array
-
-    def solve_wF_vec(self,discrete=False):
-        """ solve model for vector of female wages """
-        par = self.par
         sol = self.sol
            
+        #0.  Loops through values of wF_vec
         for i,wF in enumerate(par.wF_vec): 
             self.par.wF = wF  
 
@@ -179,13 +169,15 @@ class HouseholdSpecializationModelClass:
 
             # b. creating objective 
             obj = lambda x: -self.calc_utility(x[0],x[1],x[2],x[3])
-            #time_constraint = lambda x: x[0]+x[1]-24 + x[2]+x[3]-24
-            #constraints = ({'type':'ineq','fun':time_constraint})
 
             # c. creating bounds
             bounds=((1e-8,24-1e-8),(1e-8,24-1e-8),(1e-8,24-1e-8),(1e-8,24-1e-8))
-            #res = optimize.minimize(obj,x_guess,method='SLSQP',bounds=bounds,constraints=constraints)
-        
+            
+            # c.alternative: Uses SLSQP instead of Nelder-Mead to minimize function        
+            #time_constraint = lambda x: x[0]+x[1]-24 + x[2]+x[3]-24
+            #constraints = ({'type':'ineq','fun':time_constraint})
+            #res = optimize.minimize(obj,x_guess,method='SLSQP',bounds=bounds,constraints=constraints)       
+            
             # d. creating result element and extracting values from it
             res = optimize.minimize(obj,x_guess,method='Nelder-Mead',bounds=bounds) 
             sol.LM_vec[i] = res.x[0]
@@ -199,36 +191,43 @@ class HouseholdSpecializationModelClass:
 
         par = self.par
         sol = self.sol
-
+        
+        #a. Genetes relevant dependent and explanatory variables
         x = np.log(par.wF_vec)
         y = np.log(sol.HF_vec/sol.HM_vec)
         A = np.vstack([np.ones(x.size),x]).T
+
+        #b. Returns beta0 and beta_1
         sol.beta0,sol.beta1 = np.linalg.lstsq(A,y,rcond=None)[0]
         return sol
     
 
     def calc_deviation(self,alpha,sigma):
+        """ For a given alpha and sigma, returns squared deviation from realistic parameter values"""
         par = self.par
         sol = self.sol
 
+        #a. Sets parameters and updates alpha and sigma
         par.alpha=alpha
         par.sigma=sigma
 
+        #b. For a given alpha and sigma simulate optimal household behavior
         self.solve_wF_vec()
+        #c. For a given household behavior run regression to find beta_0 and beta_1
         self.run_regression()
+        #d. For beta_0 and beta_1 calculate sq. dev. from target parameters
         test=(par.beta0_target-sol.beta0)**2+(par.beta1_target-sol.beta1)**2
         return test
 
-    def estimate(self,alpha=None,sigma=None):
-        """ estimate alpha and sigma """
+    def estimate(self):
+        """ Minimize sq. dev. from realistic parameter values wrt. alpha and sigma """
 
         par = self.par
         sol = self.sol  
 
-        # a. guesses:
+        # a. use guesses:
         alpha_guess=0.5
         sigma_guess=1
-
         guess=[alpha_guess,sigma_guess]
 
         # b. creating objective
