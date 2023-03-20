@@ -19,12 +19,12 @@ class HouseholdSpecializationModelClass:
         par.rho = 2.0
         par.nu = 0.001
         par.epsilon = 1.0
-        par.omega = 0.5 
+        par.omega = 0.5
 
         # c. household production
         par.alpha = 0.5
         par.sigma = 1
-
+        par.max =1
         # d. wages
         par.wM = 1.0
         par.wF = 1.0
@@ -69,7 +69,7 @@ class HouseholdSpecializationModelClass:
         epsilon_ = 1+1/par.epsilon
         TM = LM+HM
         TF = LF+HF
-        disutility = par.nu*(TM**epsilon_/epsilon_+TF**epsilon_/epsilon_)
+        disutility = par.nu*((LM+HM)**epsilon_/epsilon_+(LF+HF)**epsilon_/epsilon_)
         
         return utility - disutility
 
@@ -201,15 +201,14 @@ class HouseholdSpecializationModelClass:
         sol.beta0,sol.beta1 = np.linalg.lstsq(A,y,rcond=None)[0]
         return sol
     
-    def calc_deviation(self,alpha,sigma):
+    def calc_deviation(self,max,sigma):
         """ For a given alpha and sigma, returns squared deviation from realistic parameter values"""
         par = self.par
         sol = self.sol
 
         #a. Sets parameters and updates alpha and sigma
-        par.alpha=alpha
         par.sigma=sigma
-
+        par.max=max
         #b. For a given alpha and sigma simulate optimal household behavior
         self.solve_wF_vec()
 
@@ -227,15 +226,15 @@ class HouseholdSpecializationModelClass:
         sol = self.sol  
 
         # a. use guesses:
-        alpha_guess=0.5
+        max_guess=0.01
         sigma_guess=1
-        guess=[alpha_guess,sigma_guess]
+        guess=[max_guess,sigma_guess]
 
         # b. creating objective
         obj= lambda x: self.calc_deviation(*x) 
 
         # c. creating bounds
-        bounds=((1e-8,1-1e-8),(1e-8,3-1e-8))
+        bounds=((1e-8,0.1-1e-8),(1e-8,3-1e-8))
 
         # d. creating result element and extracting values from it
         res = optimize.minimize(obj,guess,method='Nelder-Mead',bounds=bounds) 
