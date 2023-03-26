@@ -208,7 +208,7 @@ class HouseholdSpecializationModelClass:
         par = self.par
         sol = self.sol
 
-        #a. Sets parameters and updates alpha, sigma and "dis"
+        #a. Sets parameters and updates alpha and sigma
         par.alpha=alpha
         par.sigma=sigma
 
