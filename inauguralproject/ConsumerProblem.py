@@ -20,6 +20,8 @@ class HouseholdSpecializationModelClass:
         par.nu = 0.001
         par.epsilon = 1.0
         par.omega = 0.5 
+        #Sets disutility parameter for doing household labor for men. 
+        par.mu = 0
 
         # c. household production
         par.alpha = 0.5
@@ -69,7 +71,7 @@ class HouseholdSpecializationModelClass:
         epsilon_ = 1+1/par.epsilon
         TM = LM+HM
         TF = LF+HF
-        disutility = par.nu*(TM**epsilon_/epsilon_+TF**epsilon_/epsilon_)
+        disutility = par.nu*(TM**epsilon_/epsilon_+TF**epsilon_/epsilon_)+par.mu*(np.fmax(par.wM/par.wF,1))*HM
         
         return utility - disutility
 
@@ -206,7 +208,7 @@ class HouseholdSpecializationModelClass:
         par = self.par
         sol = self.sol
 
-        #a. Sets parameters and updates alpha and sigma
+        #a. Sets parameters and updates alpha, sigma and "dis"
         par.alpha=alpha
         par.sigma=sigma
 
@@ -240,5 +242,47 @@ class HouseholdSpecializationModelClass:
         # d. creating result element and extracting values from it
         res = optimize.minimize(obj,guess,method='Nelder-Mead',bounds=bounds) 
         sol.alpha = res.x[0]
+        sol.sigma = res.x[1]
+        return sol
+    
+    def calc_deviation_5(self,mu,sigma):
+        """ For a given mu and sigma, returns squared deviation from realistic parameter values"""
+        par = self.par
+        sol = self.sol
+
+        #a. Sets parameters and updates mu and sigma
+        par.mu=mu
+        par.sigma=sigma
+
+        #b. For a given mu and sigma simulate optimal household behavior
+        self.solve_wF_vec()
+
+        #c. For a given household behavior run regression to find beta_0 and beta_1
+        self.run_regression()
+
+        #d. For beta_0 and beta_1 calculate sq. dev. from target parameters
+        test=(par.beta0_target-sol.beta0)**2+(par.beta1_target-sol.beta1)**2
+        return test
+
+    def estimate_5(self):
+        """ Minimize sq. dev. from realistic parameter values wrt. mu and sigma """
+
+        par = self.par
+        sol = self.sol  
+
+        # a. use guesses:
+        mu_guess=0.5
+        sigma_guess=1
+        guess=[mu_guess,sigma_guess]
+
+        # b. creating objective
+        obj= lambda x: self.calc_deviation_5(*x) 
+
+        # c. creating bounds
+        bounds=((1e-8,1-1e-8),(1e-8,3-1e-8))
+
+        # d. creating result element and extracting values from it
+        res = optimize.minimize(obj,guess,method='Nelder-Mead',bounds=bounds) 
+        sol.mu = res.x[0]
         sol.sigma = res.x[1]
         return sol

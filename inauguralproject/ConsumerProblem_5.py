@@ -28,7 +28,7 @@ class HouseholdSpecializationModelClass:
         # d. wages
         par.wM = 1.0
         par.wF = 1.0
-        par.wF_vec = np.linspace(0.8,1.2,5)
+        par.wF_vec = np.linspace(0.7,1.1,5)
 
         # e. targets
         par.beta0_target = 0.4
@@ -69,7 +69,8 @@ class HouseholdSpecializationModelClass:
         epsilon_ = 1+1/par.epsilon
         TM = LM+HM
         TF = LF+HF
-        disutility = par.nu*((LM+HM)**epsilon_/epsilon_+(LF+HF)**epsilon_/epsilon_)
+        #Lavet ændringer i disutility her
+        disutility = par.nu*((LM+HM)**epsilon_/epsilon_+(LF+HF)**epsilon_/epsilon_)+par.max*np.fmin(par.wM/par.wF,1)*HM
         
         return utility - disutility
 
