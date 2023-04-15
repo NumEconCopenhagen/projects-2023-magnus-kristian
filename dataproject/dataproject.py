@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 import ipywidgets as widgets
 from pandas_datareader import wb
 
-
 class WGI_DataFrame:
-    def __init__(self, file_path):
+        def __init__(self, file_path, file_path2, in_country, varlist_as_dict, start_year, end_year):
         self.dataframe = pd.read_csv(file_path)
+        self.wb1 = wb.download(file_path2)
 
         # list of columns to drop
         self.drop_these = ['Country Code', 'Series Code']
@@ -17,6 +17,23 @@ class WGI_DataFrame:
         for i in range(1996, 2022):
             self.col_dict[str(i)+" [YR"+str(i)+"]"] = f'wgi{i}'
 
+
+        # Get variable names from dictionary used to rename variables
+            self.varlist_to_get = list(varlist_as_dict.keys())
+        
+        # download API 
+        self.wb0 = wb.download(country=in_country, indicator=varlist_to_get, start=start_year, end=end_year)
+        
+        # Clean data
+        self.wb1 = (self.wb0
+            .rename(columns = varlist_as_dict)  # Rename data columns
+            .reset_index()                      # Change multi-index ['country','year'] to separat columns (because we like our data this way)
+            .astype({'year':'int'})             # Change data type of year
+            .astype({'country':'string'}))      # Change data type of country
+
+        self.wb_variables_with_new_names = {'SI.POV.GINI':'GINI',
+                               'NY.GDP.PCAP.KD':'GDP',
+                               'NY.GDP.PCAP.KD.ZG':'GDP_growth'}
         # process dataframe
         self.__process_dataframe()
 
@@ -27,6 +44,7 @@ class WGI_DataFrame:
         # rename columns
         self.dataframe.rename(columns=self.col_dict, inplace=True)
         self.dataframe.rename(columns={'Country Name': 'country'}, inplace=True)
+        self.wb1.rename(columns=self.wb_variables_with_new_names, inplace=True)
 
         # Using the 'wide_to_long()' method from Pandas, the wb_wgi DataFrame is converted from a wide format to a long format, with the new column 'year' created for the year data is collected.
         self.dataframe = pd.wide_to_long(self.dataframe, stubnames='wgi', i=['country','Series Name'], j='year')
@@ -57,13 +75,13 @@ class WGI_DataFrame:
         newnamelist = self.dataframe.ser.unique()
 
         # We create a pivot table with wb_wgi dataframe, where the index is set to ['country', 'year'], the columns are set to ser, and the values are set to wgi. This is stored in a new dataframe called wb_new.
-        wb_new=pd.pivot(self.dataframe, index=['country','year'], columns = 'ser', values= 'wgi')
+        self.dataframe=pd.pivot(self.dataframe, index=['country','year'], columns = 'ser', values= 'wgi')
         
         # We reset the index of 'wb_new'
-        wb_new=wb_new.reset_index()
+        self.dataframe=self.dataframe.reset_index()
         
         # We then merge the self.dataframe and wb_new dataframes on the columns 'year' and 'country', using an outer join.
-        self.final = pd.merge(self.dataframe, wb_new, on=['year', 'country'], how = 'outer')
+        self.final = pd.merge(self.wb1, self.dataframe, on=['year', 'country'], how = 'outer')
         
         # We create a list of column names called 'col_list' which includes the names of columns to be processed in the loop
         col_list = ['COC', 'GOV', 'REQ', 'ROL', 'RSA', 'VOA']
@@ -75,6 +93,13 @@ class WGI_DataFrame:
     def final_dataframe(self):
         return self.final
     
+
+
+
+
+
+
+
 
 import pandas as pd
 import matplotlib.pyplot as plt
