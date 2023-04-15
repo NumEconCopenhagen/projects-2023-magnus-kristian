@@ -47,3 +47,41 @@ def my_wb_downloader(in_country, varlist_as_dict, start_year, end_year):
          .astype({'country':'string'}))      # Change data type of country
 
     return wb1
+
+
+
+# Function: Nomalize a list of variables by group in DataFrame
+def standardize_by_group(df, varlist, grouplist):
+    '''Normalize variables by mean and standard deviation'''
+
+    # for all variables in varlist
+    for var in varlist:
+        
+        # Generate a new variables *_norm
+        new_var = var + '_norm'
+
+        # Subtract the group mean and divide by group std
+        df[new_var] = (df[var] - df.groupby(grouplist)[var].transform('mean')) / df.groupby(grouplist)[var].transform('std')
+
+    # Return the modified dataframe
+    return df
+
+# Function: Calculate simple statistics for all variables in DataFrame
+def calc_simplestats(df, varlist, group_by_year = True, groups_to_print=[]):
+    '''Generate new dataframe with descriptive statistics for all variables in varlist for. Leave groups_to_print empty if group_by_year is False'''
+
+    if group_by_year == True:
+
+        assert len(groups_to_print) > 0 # must select some years
+
+        # new dataframe
+        df_stats = (df.query('year in @groups_to_print')     # Report only specific years
+                  .groupby('year')[varlist]                       # Group by (default is year)
+                  .agg(['count','mean', 'std']))                  # Report n, mean, std
+    
+    if group_by_year == False:
+
+        # new dataframe
+        df_stats = (df[varlist].agg(['count','mean', 'std']))                  # Report n, mean, std
+
+    return df_stats
