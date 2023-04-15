@@ -57,19 +57,52 @@ class WGI_DataFrame:
         # We reset the index of 'wb_new'
         wb_new=wb_new.reset_index()
         
-        # We then merge the self.dataframe and wb_new dataframes on the columns 'year' and 'country', using an outer join. The resulting dataframe is stored in final.
-        self.dataframe = pd.merge(self.dataframe, wb_new, on=['year', 'country'], how = 'outer')
+        # We then merge the self.dataframe and wb_new dataframes on the columns 'year' and 'country', using an outer join.
+        self.final = pd.merge(self.dataframe, wb_new, on=['year', 'country'], how = 'outer')
         
         # We create a list of column names called 'col_list' which includes the names of columns to be processed in the loop
         col_list = ['COC', 'GOV', 'REQ', 'ROL', 'RSA', 'VOA']
 
         # We use the loc function to locate all rows in final dataframe where the value of column i (where i is each column name in col_list) is equal to "..", and replaces those values with NaN. This process converts the string data type to float data type, which is easier to work with for numeric analysis.
         for i in col_list:
-            self.dataframe.loc[self.dataframe[i]==".."] = np.nan
+            self.final.loc[self.final[i]==".."] = np.nan
     
     def final_dataframe(self):
-        return self.dataframe
+        return self.final
+    
 
+import pandas as pd
+import matplotlib.pyplot as plt
+from ipywidgets import interact
+
+class ScatterPlot:
+    def __init__(self, data):
+        self.final_data = data.dropna(subset=['GINI', 'GDP', 'COC'], how='any')
+        self.quality = self.final_data.COC
+        self.cmin = self.final_data.COC.min()
+        self.cmax = self.final_data.COC.max()
+        self.years = sorted(self.final_data['year'].unique())
+
+    def plot_scatter(self, year):
+        fig, ax = plt.subplots()
+        scatter = ax.scatter(self.final_data[self.final_data['year'] == year]['GINI'], self.final_data[self.final_data['year'] == year]['GDP'],
+                             c=self.final_data[self.final_data['year'] == year]['COC'], alpha=0.5, vmin=self.cmin, vmax=self.cmax)
+        ax.set_xlabel(r'$GINI$', fontsize=15)
+        ax.set_ylabel(r'$GDP$', fontsize=15)
+        ax.set_title('GINI and GDP (Year: {})'.format(year))
+        ax.set_xlim(self.final_data['GINI'].min(), self.final_data['GINI'].max())  # Set x-axis limits
+        ax.set_ylim(self.final_data['GDP'].min(), self.final_data['GDP'].max())  # Set y-axis limits
+        ax.grid(True)
+        fig.tight_layout()
+        # Add color bar
+        cbar = plt.colorbar(scatter)
+        cbar.set_label('COC', fontsize=12)  # Set color bar label
+        plt.show()
+
+    def interact_plot(self):
+        interact(self.plot_scatter, year=self.years)
+     
+     
 
 
 
