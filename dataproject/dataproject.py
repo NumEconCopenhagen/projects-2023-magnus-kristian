@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import ipywidgets as widgets
 from pandas_datareader import wb
 
-
 class WGI_DataFrame:
     def __init__(self, file_path):
         self.dataframe = pd.read_csv(file_path)
