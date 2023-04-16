@@ -204,7 +204,7 @@ def corr(df,var1,var2):
     for i, ax in enumerate(axs.flatten()):
         ''' Loop through each subplot and plot the scatterplot with appropriate GINI lag'''
         # Lag GINI by i years
-        final_data2[var1_lagged] = final_data2[var1].shift(i * 20)
+        final_data2[var1_lagged] = final_data2[var1].shift(i * 5)
         
         # Drops missing values based on the var1_lagged and var2 columns from the final_data2 dataframe.
         final_data2_filtered = final_data2.dropna(subset=[var1_lagged, var2], how='any')
