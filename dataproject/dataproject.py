@@ -6,6 +6,8 @@ from pandas_datareader import wb
 import pandas as pd
 import matplotlib.pyplot as plt
 from ipywidgets import interact
+import seaborn as sns
+from scipy.stats import linregress
 
 # Function: Download World Bank data
 def my_wb_downloader(in_country, varlist_as_dict, start_year, end_year):
@@ -132,6 +134,9 @@ def calc_simplestats(df, varlist, group_by_year = True, groups_to_print=[]):
 
     return df_stats
 
+def corr(df, var1, var2):
+    final_data2 = df.dropna(subset=['GINI', 'GDP_growth'], how='any')
+
 #Skal debugges!
 class ScatterPlot:
     def __init__(self, data):
@@ -160,4 +165,3 @@ class ScatterPlot:
     def interact_plot(self):
         interact(self.plot_scatter, year=self.years)
 
-#12
