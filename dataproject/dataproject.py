@@ -134,8 +134,55 @@ def calc_simplestats(df, varlist, group_by_year = True, groups_to_print=[]):
 
     return df_stats
 
-def corr(df, var1, var2):
-    final_data2 = df.dropna(subset=['GINI', 'GDP_growth'], how='any')
+def corr(df,var1,var2):
+    # Drops missing values from final dataframe based on the GINI and GDP_growth columns and creates a new dataframe called final_data2.
+    final_data2 = df.copy().dropna(subset=[var1, var2], how='any')
+
+    # Create a 2x2 grid of subplots
+    fig, axs = plt.subplots(2, 2, figsize=(8, 6))
+
+    var1_lagged = var1 + '_lagged' 
+
+    # Loop through each subplot and plot the scatterplot with appropriate GINI lag
+    for i, ax in enumerate(axs.flatten()):
+
+        # Lag GINI by i years
+        final_data2[var1_lagged] = final_data2[var1].shift(i * 10)
+        
+        # Drops missing values based on the GINI_lagged and GDP_growth columns from the final_data2 dataframe.
+        final_data2_filtered = final_data2.dropna(subset=[var1_lagged, var2], how='any')
+        
+        # Plots a scatterplot using sns.histplot() function with GINI_lagged on the x-axis, GDP_growth on the y-axis, and the final_data2_filtered dataframe
+        sns.histplot(x=var1, y=var2, data=final_data2_filtered, ax=ax, bins=30, cbar=True, cmap='viridis', cbar_kws={'label': 'Count'})
+        
+        # Add regression line and display coefficients with significance stars
+        slope, intercept, r_value, p_value, std_err = linregress(final_data2_filtered[var1_lagged], final_data2_filtered[var2])
+        significance_slope = ""
+        significance_intercept = ""
+        if p_value < 0.001:
+            significance_slope = "***"
+            significance_intercept = "***"
+        elif p_value < 0.01:
+            significance_slope = "**"
+            significance_intercept = "**"
+        elif p_value < 0.05:
+            significance_slope = "*"
+            significance_intercept = "*"
+        
+        # Add regression line to the scatterplot
+        x = np.linspace(final_data2_filtered[var1_lagged].min(), final_data2_filtered[var2].max(), 100)
+        y = slope * x + intercept
+        ax.plot(x, y, color='black', linewidth=1)
+        
+        ax.annotate(f'Slope: {slope:.2f}{significance_slope}\nIntercept: {intercept:.2f}{significance_intercept}', xy=(0.05, 0.95), xycoords='axes fraction', ha='left', va='top')
+        
+        ax.set_xlabel(f'{var1} lagged {i * 10} years', fontsize=12)  # x-axis label with lag
+        ax.set_ylabel(var2, fontsize=12)  # y-axis label
+        ax.set_title(f'Panel {i + 1}', fontsize=12)  # plot title
+        ax.grid(True)
+    # Calls the plt.tight_layout() function to optimize the layout of the subplots and displays the subplots using the plt.show() function.
+    plt.tight_layout()
+    plt.show()
 
 #Skal debugges!
 class ScatterPlot:
