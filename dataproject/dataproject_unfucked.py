@@ -9,6 +9,7 @@ from ipywidgets import interact
 import seaborn as sns
 from scipy.stats import linregress
 import statsmodels.api as sm 
+from scipy import signal
 
 # Function: Download World Bank data
 def my_wb_downloader(in_country, varlist_as_dict, start_year, end_year):
