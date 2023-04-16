@@ -155,11 +155,56 @@ def corr(df,var1,var2):
     #Creates a new label for the lagged variables
     var1_lagged = var1 + '_lagged' 
 
-    #Function: Runs for each panel 
+#Function: Creates a scatter plot
+def ScatterPlot(df,varx,vary,varcolor):
+    '''Creates a scatter plot where the correlation between vary and varx is shown in a given year, the dots are colored based on their value of varcolor'''
+    # We create a new DataFrame called final_data by dropping all rows with missing values in varx, vary and carcolor columns using the dropna() method.
+    final_data = df.dropna(subset=[varx, vary, varcolor], how='any')
+
+    # We define variables cmin and cmax, which respectively store the minimum and maximum values of the varcolor column in the final_data DataFrame. These values are used to set the range of the colorbar in the plot.
+    cmin = final_data[varcolor].min()
+    cmax = final_data[varcolor].max()
+
+    # We define a function called plot_scatter that creates a scatter plot of vary vs varx for a given year. The plot is colored based on the varcolor variable, which is represented by a colorbar.
+    def plot_scatter(year):
+        fig, ax = plt.subplots()
+        scatter = ax.scatter(final_data[final_data['year'] == year][varx], final_data[final_data['year'] == year][vary],
+                            c=final_data[final_data['year'] == year][varcolor], alpha=0.5, vmin=cmin, vmax=cmax)
+        ax.set_xlabel(r'$GINI$', fontsize=15)
+        ax.set_ylabel(r'$GDP$', fontsize=15)
+        ax.set_title(f'{varx} and {vary} (Year: {year})')
+        ax.set_xlim(final_data[varx].min(), final_data[varx].max())  # Set x-axis limits
+        ax.set_ylim(final_data[vary].min(), final_data[vary].max())  # Set y-axis limits
+        ax.grid(True)
+        fig.tight_layout()
+        # Add color bar
+        cbar = plt.colorbar(scatter)
+        cbar.set_label(varcolor, fontsize=12)  # Set color bar label
+        plt.show()
+
+    # Create a list of unique years in ascending order
+    years = sorted(final_data['year'].unique())  
+
+    # We create an interactive plot of the plot_scatter function, with the year variable being controlled by a slider. The slider allows to choose a specific year to plot the scatter plot for.
+    interact(plot_scatter, year=years)
+
+# Function: Creates correlation graphs across time
+def corr(df,var1,var2):
+    '''Creates a figure with 4 panels, where one variable is regressed on the other, which is lagged 0, 10, 20 and 30 years.''' 
+    # Drops missing values from final dataframe based on the var1 and var2 columns and creates a new dataframe called final_data2.
+    final_data2 = df.copy().dropna(subset=[var1, var2], how='any')
+
+    # Create a 2x2 grid of subplots
+    fig, axs = plt.subplots(2, 2, figsize=(8, 6))
+
+    # Creates a new label for the lagged variables
+    var1_lagged = var1 + '_lagged' 
+
+    # Function: Runs for each panel 
     for i, ax in enumerate(axs.flatten()):
         ''' Loop through each subplot and plot the scatterplot with appropriate GINI lag'''
         # Lag GINI by i years
-        final_data2[var1_lagged] = final_data2[var1].shift(i * 10)
+        final_data2[var1_lagged] = final_data2[var1].shift(i * 20)
         
         # Drops missing values based on the var1_lagged and var2 columns from the final_data2 dataframe.
         final_data2_filtered = final_data2.dropna(subset=[var1_lagged, var2], how='any')
@@ -182,20 +227,20 @@ def corr(df,var1,var2):
             significance_intercept = "*"
         
         # Adds regression line to the scatterplot
-        x = np.linspace(final_data2_filtered[var1_lagged].min(), final_data2_filtered[var2].max(), 100)
+        x = np.linspace(final_data2[var1_lagged].min(), final_data2[var1_lagged].max(), 200)
         y = slope * x + intercept
         ax.plot(x, y, color='black', linewidth=1)
         
-        #Put result of regression in the corner of each panel
+        # Put result of regression in the corner of each panel
         ax.annotate(f'Slope: {slope:.2f}{significance_slope}\nIntercept: {intercept:.2f}{significance_intercept}', xy=(0.05, 0.95), xycoords='axes fraction', ha='left', va='top')
         
-        ax.set_xlabel(f'{var1} lagged {i * 10} years', fontsize=12)  # x-axis label with lag
+        ax.set_xlabel(f'{var1} lagged {i * 20} years', fontsize=12)  # x-axis label with lag
         ax.set_ylabel(var2, fontsize=12)  # y-axis label
         ax.set_title(f'Panel {i + 1}', fontsize=12)  # plot title
         ax.grid(True)
     # Calls the plt.tight_layout() function to optimize the layout of the subplots and displays the subplots using the plt.show() function.
     plt.tight_layout()
-    plt.show()
+    plt.show
 
 #Function: Makes regressions
 def regression(df, y_var, x_list):
@@ -250,36 +295,3 @@ def regression1(df, vary, x_list, years, year):
     result = model.fit()
         
     print(result.summary())
-
-#Function: Creates a scatter plot
-def ScatterPlot(df,varx,vary,varcolor):
-    '''Creates a scatter plot where the correlation between vary and varx is shown in a given year, the dots are colored based on their value of varcolor'''
-    # We create a new DataFrame called final_data by dropping all rows with missing values in varx, vary and carcolor columns using the dropna() method.
-    final_data = df.dropna(subset=[varx, vary, varcolor], how='any')
-
-    # We define variables cmin and cmax, which respectively store the minimum and maximum values of the varcolor column in the final_data DataFrame. These values are used to set the range of the colorbar in the plot.
-    cmin = final_data[varcolor].min()
-    cmax = final_data[varcolor].max()
-
-    # We define a function called plot_scatter that creates a scatter plot of vary vs varx for a given year. The plot is colored based on the varcolor variable, which is represented by a colorbar.
-    def plot_scatter(year):
-        fig, ax = plt.subplots()
-        scatter = ax.scatter(final_data[final_data['year'] == year][varx], final_data[final_data['year'] == year][vary],
-                            c=final_data[final_data['year'] == year][varcolor], alpha=0.5, vmin=cmin, vmax=cmax)
-        ax.set_xlabel(r'$GINI$', fontsize=15)
-        ax.set_ylabel(r'$GDP$', fontsize=15)
-        ax.set_title(f'{varx} and {vary} (Year: {year})')
-        ax.set_xlim(final_data[varx].min(), final_data[varx].max())  # Set x-axis limits
-        ax.set_ylim(final_data[vary].min(), final_data[vary].max())  # Set y-axis limits
-        ax.grid(True)
-        fig.tight_layout()
-        # Add color bar
-        cbar = plt.colorbar(scatter)
-        cbar.set_label(varcolor, fontsize=12)  # Set color bar label
-        plt.show()
-
-    # Create a list of unique years in ascending order
-    years = sorted(final_data['year'].unique())  
-
-    # We create an interactive plot of the plot_scatter function, with the year variable being controlled by a slider. The slider allows to choose a specific year to plot the scatter plot for.
-    interact(plot_scatter, year=years)
