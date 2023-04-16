@@ -234,7 +234,7 @@ def corr(df,var1,var2):
         # Put result of regression in the corner of each panel
         ax.annotate(f'Slope: {slope:.2f}{significance_slope}\nIntercept: {intercept:.2f}{significance_intercept}', xy=(0.05, 0.95), xycoords='axes fraction', ha='left', va='top')
         
-        ax.set_xlabel(f'{var1} lagged {i * 20} years', fontsize=12)  # x-axis label with lag
+        ax.set_xlabel(f'{var1} lagged {i * 5} years', fontsize=12)  # x-axis label with lag
         ax.set_ylabel(var2, fontsize=12)  # y-axis label
         ax.set_title(f'Panel {i + 1}', fontsize=12)  # plot title
         ax.grid(True)
