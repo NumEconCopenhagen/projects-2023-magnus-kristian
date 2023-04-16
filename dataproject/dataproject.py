@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from ipywidgets import interact
 import seaborn as sns
 from scipy.stats import linregress
+import statsmodels.api as sm 
 
 # Function: Download World Bank data
 def my_wb_downloader(in_country, varlist_as_dict, start_year, end_year):
@@ -183,6 +184,31 @@ def corr(df,var1,var2):
     # Calls the plt.tight_layout() function to optimize the layout of the subplots and displays the subplots using the plt.show() function.
     plt.tight_layout()
     plt.show()
+
+# define function to do regression: 
+def regression(df, y_var, x_list):
+
+    # The X variable is created by selecting the columns of the final DataFrame that correspond to the six independent variables using the loc method.
+    X = df.loc[:,x_list]
+    
+    # A loop is used to shift the values of each independent variable forward by 10 time years using the shift method. This is done in order to lag the variable by 10 years. 
+    for i in x_list:
+        X[i] = X[i].shift(-10) 
+
+    # The X variable is then augmented with a constant term using the add_constant function from the statsmodels.api modul
+    X = sm.add_constant(X)
+
+    # The dependent variable y is selected from the final DataFrame using the loc method.
+    y = df.loc[:,y_var]
+
+    # An OLS regression model is created using the OLS function from the statsmodels.api module, with y as the dependent variable and X as the independent variables. The missing='drop' argument specifies that any rows with missing values should be dropped.
+    model = sm.OLS(y,X, missing='drop')
+
+    # The fit method is used to fit the model and store the results in the result variable.
+    result = model.fit()
+        
+    print(result.summary())
+
 
 #Skal debugges!
 class ScatterPlot:
