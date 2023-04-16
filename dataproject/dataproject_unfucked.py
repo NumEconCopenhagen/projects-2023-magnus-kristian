@@ -1,3 +1,4 @@
+#Import packages
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,10 +19,10 @@ def my_wb_downloader(in_country, varlist_as_dict, start_year, end_year):
     # Get variable names from dictionary used to rename variables
     varlist_to_get = list(varlist_as_dict.keys())
 
-    # Download API
+    # Download data using API
     wb0 = wb.download(country=in_country, indicator=varlist_to_get, start=start_year, end=end_year)
 
-    # Clean data
+    # Cleans data
     wb1 = (wb0
          .rename(columns = varlist_as_dict)  # Rename data columns
          .reset_index()                      # Change multi-index ['country','year'] to separate columns (because we like our data this way)
@@ -30,8 +31,9 @@ def my_wb_downloader(in_country, varlist_as_dict, start_year, end_year):
 
     return wb1
 
+#Function: Imports WGI data
 def WGI_DataFrame(file_path):
-#   def __init__(file_path, file_path2, in_country, varlist_as_dict, start_year, end_year):
+    '''Downloads and cleans WGI-data from CSV-file'''
     dataframe = pd.read_csv(file_path)
 
     # list of columns to drop
@@ -45,8 +47,9 @@ def WGI_DataFrame(file_path):
         col_dict[str(i)+" [YR"+str(i)+"]"] = f'wgi{i}'
     
     # rename columns
-    dataframe.rename(columns=col_dict, inplace=True)
-    dataframe.rename(columns={'Country Name': 'country'}, inplace=True)
+    dataframe = (dataframe.
+                rename(columns=col_dict).                    # Renames WGI-measures
+                rename(columns={'Country Name': 'country'})) #Renames country var
 
     # Using the 'wide_to_long()' method from Pandas, the wb_wgi DataFrame is converted from a wide format to a long format, with the new column 'year' created for the year data is collected.
     dataframe = pd.wide_to_long(dataframe, stubnames='wgi', i=['country','Series Name'], j='year')
@@ -57,7 +60,7 @@ def WGI_DataFrame(file_path):
     # Renaming the 'Series Name' column to 'ser' using the rename() method.
     dataframe.rename(columns = {'Series Name':'ser'}, inplace=True)
 
-    #Get a list of all the series in the data
+    #Gets a list of all the series in the data
     namelist = dataframe.ser.unique()
 
     # Defining a dictionary called newnames that maps the long series names to short names.
@@ -84,7 +87,11 @@ def WGI_DataFrame(file_path):
 
     return dataframe
 
+#Function: Merges datasets
 def merge(wb_dataset, wgi_dataset):
+    '''Merges the datasets from the API and from the .csv-file.
+    It also sets empty values equal to nan and changes the .type of variables to be .float'''
+
     # We then merge the self.dataframe and wb_new dataframes on the columns 'year' and 'country', using an outer join.
     final = pd.merge(wb_dataset, wgi_dataset, on=['year', 'country'], how = 'outer')
     
@@ -136,25 +143,28 @@ def calc_simplestats(df, varlist, group_by_year = True, groups_to_print=[]):
 
     return df_stats
 
+#Function: Creates correlation graphs across time
 def corr(df,var1,var2):
-    # Drops missing values from final dataframe based on the GINI and GDP_growth columns and creates a new dataframe called final_data2.
+    '''Creates a figure with 4 panels, where one variable is regressed on the other, which is lagged 0, 10, 20 and 30 years.''' 
+    # Drops missing values from final dataframe based on the var1 and var2 columns and creates a new dataframe called final_data2.
     final_data2 = df.copy().dropna(subset=[var1, var2], how='any')
 
     # Create a 2x2 grid of subplots
     fig, axs = plt.subplots(2, 2, figsize=(8, 6))
 
+    #Creates a new label for the lagged variables
     var1_lagged = var1 + '_lagged' 
 
-    # Loop through each subplot and plot the scatterplot with appropriate GINI lag
+    #Function: Runs for each panel 
     for i, ax in enumerate(axs.flatten()):
-
+        ''' Loop through each subplot and plot the scatterplot with appropriate GINI lag'''
         # Lag GINI by i years
         final_data2[var1_lagged] = final_data2[var1].shift(i * 10)
         
-        # Drops missing values based on the GINI_lagged and GDP_growth columns from the final_data2 dataframe.
+        # Drops missing values based on the var1_lagged and var2 columns from the final_data2 dataframe.
         final_data2_filtered = final_data2.dropna(subset=[var1_lagged, var2], how='any')
         
-        # Plots a scatterplot using sns.histplot() function with GINI_lagged on the x-axis, GDP_growth on the y-axis, and the final_data2_filtered dataframe
+        # Plots a scatterplot using sns.histplot() function with var1_lagged on the x-axis, var2 on the y-axis, and the final_data2_filtered dataframe
         sns.histplot(x=var1, y=var2, data=final_data2_filtered, ax=ax, bins=30, cbar=True, cmap='viridis', cbar_kws={'label': 'Count'})
         
         # Add regression line and display coefficients with significance stars
@@ -171,11 +181,12 @@ def corr(df,var1,var2):
             significance_slope = "*"
             significance_intercept = "*"
         
-        # Add regression line to the scatterplot
+        # Adds regression line to the scatterplot
         x = np.linspace(final_data2_filtered[var1_lagged].min(), final_data2_filtered[var2].max(), 100)
         y = slope * x + intercept
         ax.plot(x, y, color='black', linewidth=1)
         
+        #Put result of regression in the corner of each panel
         ax.annotate(f'Slope: {slope:.2f}{significance_slope}\nIntercept: {intercept:.2f}{significance_intercept}', xy=(0.05, 0.95), xycoords='axes fraction', ha='left', va='top')
         
         ax.set_xlabel(f'{var1} lagged {i * 10} years', fontsize=12)  # x-axis label with lag
@@ -186,17 +197,17 @@ def corr(df,var1,var2):
     plt.tight_layout()
     plt.show()
 
-# define function to do regression: 
+#Function: Makes regressions
 def regression(df, y_var, x_list):
-
-    # The X variable is created by selecting the columns of the final DataFrame that correspond to the six independent variables using the loc method.
+    '''Regresses yvar on x_list'''
+    # The X variable is created by selecting the columns of the final DataFrame that correspond to the independent variables using the loc method.
     X = df.loc[:,x_list]
     
-    # A loop is used to shift the values of each independent variable forward by 10 time years using the shift method. This is done in order to lag the variable by 10 years. 
+    # A loop is used to shift the values of each independent variable backwards by 10 time years using the shift method.
     for i in x_list:
         X[i] = X[i].shift(-10) 
 
-    # The X variable is then augmented with a constant term using the add_constant function from the statsmodels.api modul
+    # The X variable is then augmented with a constant term using the add_constant function from the statsmodels.api module
     X = sm.add_constant(X)
 
     # The dependent variable y is selected from the final DataFrame using the loc method.
@@ -210,32 +221,65 @@ def regression(df, y_var, x_list):
         
     print(result.summary())
 
+#Function: Regression of sd. of vary-detrended on x_list vars. 
+def regression1(df, vary, x_list, years, year):
+    '''Runs a regression which checks if the standard deviation of vary around tis trend is larger for countries with bad WGI-values'''
+    # sort dataset to contain specicic years.
+    df1 = df.loc[df['year'].isin(years)]
+    df1 = df1.dropna(subset=[vary], how='any')
 
-#Skal debugges!
-class ScatterPlot:
-    def __init__(self, data):
-        self.final_data = data.dropna(subset=['GINI', 'GDP', 'COC'], how='any')
-        self.quality = self.final_data.COC
-        self.cmin = self.final_data.COC.min()
-        self.cmax = self.final_data.COC.max()
-        self.years = sorted(self.final_data['year'].unique())
+    # detrend 'vary'
+    y = df1.loc[:, vary]
+    df1['y_detrended'] = signal.detrend(y, type='linear')
 
-    def plot_scatter(self, year):
+    #Computes standard deviation of detrended variable.
+    df1['std'] = df1.groupby('country')['y_detrended'].transform('std')
+
+    # Select only one year
+    df2 = df1.loc[df1['year'] == year]
+
+    # Regress std. on lagged governance
+    X = df2.loc[:, x_list]  # COC should be changed to governance indicator
+    X = sm.add_constant(X)
+
+    y = df2.loc[:, 'std']
+    # An OLS regression model is created using the OLS function from the statsmodels.api module, with y as the dependent variable and X as the independent variables. The missing='drop' argument specifies that any rows with missing values should be dropped.
+    model = sm.OLS(y,X, missing='drop')
+
+    # The fit method is used to fit the model and store the results in the result variable.
+    result = model.fit()
+        
+    print(result.summary())
+
+#Function: Creates a scatter plot
+def ScatterPlot(df,varx,vary,varcolor):
+    '''Creates a scatter plot where the correlation between vary and varx is shown in a given year, the dots are colored based on their value of varcolor'''
+    # We create a new DataFrame called final_data by dropping all rows with missing values in varx, vary and carcolor columns using the dropna() method.
+    final_data = df.dropna(subset=[varx, vary, varcolor], how='any')
+
+    # We define variables cmin and cmax, which respectively store the minimum and maximum values of the varcolor column in the final_data DataFrame. These values are used to set the range of the colorbar in the plot.
+    cmin = final_data[varcolor].min()
+    cmax = final_data[varcolor].max()
+
+    # We define a function called plot_scatter that creates a scatter plot of vary vs varx for a given year. The plot is colored based on the varcolor variable, which is represented by a colorbar.
+    def plot_scatter(year):
         fig, ax = plt.subplots()
-        scatter = ax.scatter(self.final_data[self.final_data['year'] == year]['GINI'], self.final_data[self.final_data['year'] == year]['GDP'],
-                             c=self.final_data[self.final_data['year'] == year]['COC'], alpha=0.5, vmin=self.cmin, vmax=self.cmax)
+        scatter = ax.scatter(final_data[final_data['year'] == year][varx], final_data[final_data['year'] == year][vary],
+                            c=final_data[final_data['year'] == year][varcolor], alpha=0.5, vmin=cmin, vmax=cmax)
         ax.set_xlabel(r'$GINI$', fontsize=15)
         ax.set_ylabel(r'$GDP$', fontsize=15)
-        ax.set_title('GINI and GDP (Year: {})'.format(year))
-        ax.set_xlim(self.final_data['GINI'].min(), self.final_data['GINI'].max())  # Set x-axis limits
-        ax.set_ylim(self.final_data['GDP'].min(), self.final_data['GDP'].max())  # Set y-axis limits
+        ax.set_title(f'{varx} and {vary} (Year: {year})')
+        ax.set_xlim(final_data[varx].min(), final_data[varx].max())  # Set x-axis limits
+        ax.set_ylim(final_data[vary].min(), final_data[vary].max())  # Set y-axis limits
         ax.grid(True)
         fig.tight_layout()
         # Add color bar
         cbar = plt.colorbar(scatter)
-        cbar.set_label('COC', fontsize=12)  # Set color bar label
+        cbar.set_label(varcolor, fontsize=12)  # Set color bar label
         plt.show()
 
-    def interact_plot(self):
-        interact(self.plot_scatter, year=self.years)
+    # Create a list of unique years in ascending order
+    years = sorted(final_data['year'].unique())  
 
+    # We create an interactive plot of the plot_scatter function, with the year variable being controlled by a slider. The slider allows to choose a specific year to plot the scatter plot for.
+    interact(plot_scatter, year=years)
