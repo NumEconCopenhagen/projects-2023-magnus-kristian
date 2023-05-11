@@ -1,6 +1,5 @@
 import numpy as np
 import sympy as sm
-import array
 
 from scipy.stats import norm
 import scipy.optimize as optimize
@@ -10,74 +9,76 @@ import plotly.graph_objs as go
 
 from types import SimpleNamespace
 
-# Importing necessary libraries
-import numpy as np
-import scipy.optimize as optimize
-import sympy as sm
+# Defining symbolic variables
 
-# Defining symbolic variables for the optimization problem
-x = sm.symbols('x')  # Symbolic variable representing x
-x_rest = sm.symbols('x_rest')  # Symbolic variable representing x_rest
-c=sm.symbols('c')
+p      = sm.symbols('p')   # price
+c      = sm.symbols('c')   # marginal cost
+b      = sm.symbols('b')   # degree of substitution between products (range = 0-1)
+x      = sm.symbols('x')   # Symbolic variable representing x
+x_rest = sm.symbols('X_r') # Symbolic variable representing x_rest
 
-# Defining the objective function
-#penalty = 100  # choose a suitable penalty value
-objective = (1 - x - x_rest - c) * x
+# Define equations and functions
 
-objective_lambd=sm.lambdify(args=(x,x_rest,c),expr=objective)
+eq_price    = sm.Eq(p, 1-x-b*x_rest)     # demand (inverse demand function)
+func_profit = p * x - c * x              # firm profit
 
-# Taking the first derivative of the objective function w.r.t x
-obj_dif = sm.diff(objective, x)
+p_from_pricefun = sm.solve(eq_price, p)  # isolate price as a variable
 
-# Converting the symbolic expression for the derivative into a callable function
-best = sm.lambdify(args=(x, x_rest,c), expr=obj_dif)
+objective = func_profit.subs(p,p_from_pricefun[0]) # substitute price into profit to get objective
 
-# Taking the second derivative of the objective function w.r.t x
-best_dif = sm.diff(obj_dif, x)
+# Lambda functions for later use
+objective_lambd = sm.lambdify(args=(x, x_rest, c, b), expr = objective)
+
+# 1st order derivative of profit wrt. x to get FOC for profit max
+objective_diff_self = sm.diff(objective, x)
+
+# Best response function (lambda function)
+bestresponse = sm.lambdify(args = (x, x_rest, c, b), expr = objective_diff_self)
+
+# 2nd order derivative of profit wrt. x and x_rest to get Jacobian Matrix
+bestresponse_diff_self = sm.diff(objective_diff_self, x)
+bestresponse_diff_rest = sm.diff(objective_diff_self, x_rest)
 
 # Converting the symbolic expression for the second derivative into a callable function
-jac_x = sm.lambdify(args=(x, x_rest), expr=best_dif)
+jac_x_self = sm.lambdify(args=(x, x_rest), expr = bestresponse_diff_self)
+jac_x_rest = sm.lambdify(args=(x, x_rest, b), expr = bestresponse_diff_rest)
 
-# Taking the second derivative of the objective function w.r.t x_rest
-best_dif = sm.diff(obj_dif, x_rest)
-
-# Converting the symbolic expression for the second derivative into a callable function
-jac_x_rest = sm.lambdify(args=(x, x_rest), expr=best_dif)
 
 # Defining the function to be optimized
-def h(x, c_vec, N):
+def h(x, c_vec, b, N):
     y = np.zeros(N)
     for i in range(N):
-        # Evaluating the first derivative of the objective function at x[i]
-        #c_rand = norm.rvs(loc=0, scale=0.001)
-        y[i] = best(x[i], sum(x) - x[i], c_vec[i])
+
+        y[i] = bestresponse(x[i], sum(x) - x[i], c_vec[i], b)
     return y
 
+
 # Defining the Jacobian of the function to be optimized
-def hp(x,N):
+def hp(x, b, N):
     y = np.zeros((N, N))
     for i in range(N):
         for j in range(N):
             if j == i:
-                # Evaluating the second derivative of the objective function w.r.t x[i]
-                y[i,j] = jac_x(x[i], sum(x) - x[i])
+                # Diagonal of the Jacobian Matrix
+                y[i,j] = jac_x_self(x[i], sum(x) - x[i])
             else:
-                # Evaluating the second derivative of the objective function w.r.t x_rest[i]
-                y[i,j] = jac_x_rest(x[i], sum(x) - x[i])
+                # Off-Diagonal of the Jacobian Matrix
+                y[i,j] = jac_x_rest(x[i], sum(x) - x[i], b)
     return y
+
 
 #Initial løsning
 # Setting up the parameters for the optimization problem
 
-def mynewfun(N=50, seed=2000):
+def solve_model(N=50, b=1, seed=2000, c_constant=9999,display=True):
     # N      = N  # Number of variables
     N_init = N
 
-    # c_vec = np.random.normal(loc=0,scale=0.50,size=N)
-    # c_vec=c_vec**8
-
-    np.random.seed(seed)
-    c_vec = 0.01*np.random.lognormal(mean=0,sigma=1,size=N)
+    if c_constant!=9999:
+        c_vec=np.full((N,),c_constant)
+    else:
+        np.random.seed(seed)
+        c_vec = 0.01*np.random.lognormal(mean=0,sigma=1,size=N)
     c_vec_init = c_vec.copy()
 
     # Setting up the initial values for x
@@ -88,7 +89,7 @@ def mynewfun(N=50, seed=2000):
     while not all(x_nonneg):
 
         # Solving the optimization problem using scipy.optimize.root() function
-        result = optimize.root(lambda x0: h(x0,c_vec,N), x0, jac=lambda x0: hp(x0,N))
+        result = optimize.root(lambda x0: h(x0, c_vec, b, N), x0, jac=lambda x0: hp(x0, b, N))
 
         x0 = result.x
         x_nonneg = (x0 >= 0).astype(bool)
@@ -98,11 +99,13 @@ def mynewfun(N=50, seed=2000):
         N     = np.sum(x_nonneg)
         index = index[x_nonneg]
 
-    profit=objective_lambd(result.x,np.sum(result.x)-result.x,c_vec)
+    profit=objective_lambd(result.x, np.sum(result.x)-result.x, c_vec, b)
+
     # Printing the results
-    print(result)
-    print('\nx =', result.x[0:5], '\nh(x) =', h(x0,c_vec,N)[0:5], '\nsum(x) =', sum(result.x), '\nmarginal cost=',c_vec[0:5],'\nprofit=', profit[0:5],'\nN_firms =',N)
-    
+    if display == True:
+        print(result)
+        print('\nx =', result.x[0:5], '\nh(x) =', h(x0,c_vec,b,N)[0:5], '\nsum(x) =', sum(result.x), '\nmarginal cost=',c_vec[0:5],'\nprofit=', profit[0:5],'\nb= ',b,'\nN_firms =',N)
+
     for i in range(N_init):
         if i in index:
             continue
