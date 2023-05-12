@@ -1,3 +1,4 @@
+# Import modules
 import numpy as np
 import sympy as sm
 
@@ -66,14 +67,14 @@ def hp(x, b, N):
                 y[i,j] = jac_x_rest(x[i], sum(x) - x[i], b)
     return y
 
-
-#Initial løsning
-# Setting up the parameters for the optimization problem
-
+# Algoritm for solving market equilibrium
 def solve_model(N=50, b=1, seed=2000, c_constant=9999,display=True):
-    # N      = N  # Number of variables
+
     N_init = N
 
+    # keyword c=9999 is a placeholder used to draw from a log-normal distribution
+    # if c is set at any other value marginal costs are constant at c
+    #
     if c_constant!=9999:
         c_vec=np.full((N,),c_constant)
     else:
@@ -123,3 +124,7 @@ def solve_model(N=50, b=1, seed=2000, c_constant=9999,display=True):
     sol.profit=profit
 
     return sol
+
+
+
+# End of py-file
