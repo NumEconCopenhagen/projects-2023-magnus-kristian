@@ -11,7 +11,6 @@ import plotly.graph_objs as go
 from types import SimpleNamespace
 
 # Defining symbolic variables
-
 p      = sm.symbols('p')   # price
 c      = sm.symbols('c')   # marginal cost
 b      = sm.symbols('b')   # degree of substitution between products (range = 0-1)

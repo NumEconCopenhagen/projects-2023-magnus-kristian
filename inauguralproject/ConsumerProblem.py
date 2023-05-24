@@ -20,6 +20,9 @@ class HouseholdSpecializationModelClass:
         par.nu = 0.001
         par.epsilon = 1.0
         par.omega = 0.5 
+        
+        #Sets disutility parameter for doing household labor for men. 
+        par.mu = 0
 
         # c. household production
         par.alpha = 0.5
@@ -35,10 +38,7 @@ class HouseholdSpecializationModelClass:
         par.beta1_target = -0.1
 
         # f. solution
-        sol.LM_vec = np.zeros(par.wF_vec.size)
-        sol.HM_vec = np.zeros(par.wF_vec.size)
-        sol.LF_vec = np.zeros(par.wF_vec.size)
-        sol.HF_vec = np.zeros(par.wF_vec.size)
+        sol.LM_vec, sol.HM_vec, sol.LF_vec, sol.HF_vec  = np.zeros(par.wF_vec.size), np.zeros(par.wF_vec.size), np.zeros(par.wF_vec.size), np.zeros(par.wF_vec.size)
 
         sol.beta0 = np.nan
         sol.beta1 = np.nan
@@ -69,8 +69,7 @@ class HouseholdSpecializationModelClass:
         epsilon_ = 1+1/par.epsilon
         TM = LM+HM
         TF = LF+HF
-        disutility = par.nu*(TM**epsilon_/epsilon_+TF**epsilon_/epsilon_)
-        
+        disutility = par.nu*(TM**epsilon_/epsilon_+TF**epsilon_/epsilon_)+par.mu*np.fmax(par.wM/par.wF,1)*HM
         return utility - disutility
 
     def solve_discrete(self,do_print=False):
@@ -119,11 +118,7 @@ class HouseholdSpecializationModelClass:
         
         # a. guesses:
         #LM,HM,LF,HF
-        LM_guess=4.5
-        HM_guess=4.5
-        LF_guess=4.5
-        HF_guess=4.5
-        x_guess=[LM_guess,HM_guess,LF_guess,HF_guess]
+        x_guess=[4.5]*4
 
         # b. creating objective 
         obj = lambda x: -self.calc_utility(x[0],x[1],x[2],x[3])
@@ -138,10 +133,7 @@ class HouseholdSpecializationModelClass:
         
         # d. creating result element and extracting values from it
         res = optimize.minimize(obj,x_guess,method='Nelder-Mead',bounds=bounds) 
-        opt.LM = res.x[0]
-        opt.HM = res.x[1]
-        opt.LF = res.x[2]
-        opt.HF = res.x[3]
+        opt.LM, opt.HM, opt.LF, opt.HF = res.x
 
         # e. print
         if do_print:
@@ -241,4 +233,45 @@ class HouseholdSpecializationModelClass:
         res = optimize.minimize(obj,guess,method='Nelder-Mead',bounds=bounds) 
         sol.alpha = res.x[0]
         sol.sigma = res.x[1]
+        return sol
+    
+    def calc_deviation_5(self,mu,sigma):
+        """ For a given mu and sigma, returns squared deviation from realistic parameter values"""
+        par = self.par
+        sol = self.sol
+
+        #a. Sets parameters and updates mu and sigma
+        par.mu=mu
+        par.sigma=sigma
+
+        #b. For a given mu and sigma simulate optimal household behavior
+        self.solve_wF_vec()
+
+        #c. For a given household behavior run regression to find beta_0 and beta_1
+        self.run_regression()
+
+        #d. For beta_0 and beta_1 calculate sq. dev. from target parameters
+        test=(par.beta0_target-sol.beta0)**2+(par.beta1_target-sol.beta1)**2
+        return test
+
+    def estimate_5(self):
+        """ Minimize sq. dev. from realistic parameter values wrt. mu and sigma """
+
+        par = self.par
+        sol = self.sol  
+
+        # a. use guesses:
+        mu_guess=0.5
+        sigma_guess=1
+        guess=[mu_guess,sigma_guess]
+
+        # b. creating objective
+        obj= lambda x: self.calc_deviation_5(*x) 
+
+        # c. creating bounds
+        bounds=((1e-8,1-1e-8),(1e-8,3-1e-8))
+
+        # d. creating result element and extracting values from it
+        res = optimize.minimize(obj,guess,method='Nelder-Mead',bounds=bounds) 
+        sol.mu, sol.sigma = res.x[0], res.x[1]
         return sol
