@@ -67,23 +67,22 @@ def hp(x, b, N):
     return y
 
 # Algoritm for solving market equilibrium
-def solve_model(N=50, b=1, seed=2000, c_constant=9999,display=True):
+def solve_model(N=50, b=1, seed=2000, draw_from_distribution=True, constant_value=9999, display=True):
 
     N_init = N
 
-    # keyword c=9999 is a placeholder used to draw from a log-normal distribution
-    # if c is set at any other value marginal costs are constant at c
-    #
-    if c_constant!=9999:
-        c_vec=np.full((N,),c_constant)
-    else:
+    # if/else statement to draw from log normal distribution
+    if draw_from_distribution:
         np.random.seed(seed)
-        c_vec = 0.01*np.random.lognormal(mean=0,sigma=1,size=N)
+        c_vec = 0.01 * np.random.lognormal(mean=0, sigma=1, size=N)
+    else:
+        c_vec = np.full((N,), constant_value)
+
     c_vec_init = c_vec.copy()
 
     # Setting up the initial values for x
-    index    = np.array(range(N))
-    x0       = np.zeros(N)
+    index = np.array(range(N))
+    x0 = np.zeros(N)
     x_nonneg = np.zeros(N, dtype=bool)
 
     while not all(x_nonneg):
