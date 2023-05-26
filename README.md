@@ -2,7 +2,7 @@
 
 **By:** Kristian Ebdrup, Kristian Vest Nielsen & Magnus Hjort
 
-This repository constain
+This repository constains
 1. Inagual project. 
 2. Data project
 3. Model project
