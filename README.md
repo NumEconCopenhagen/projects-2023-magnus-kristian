@@ -1,14 +1,13 @@
-# \[Hvad skal der ske\]
+# Repository: Authors, Contents & Dependencies
 
-**Group members:**
-- Magnus Hjort
-- Kristian Ebdrup
-- Kristian Vest
+**By:** Kristian Ebdrup, Kristian Vest Nielsen & Magnus Hjort
+
+This repository constain
+1. Inagual project. 
+2. Data project
+3. Model project
+4. Exam project
 
 
-This repository contains  
-1. Inaugural project. 
-2. Data project. We fetch data from **source x** on **y** and show that ...
-3. Model project. We model ...
 
-s
+**Dependencies:** Apart from a standard Anaconda Python 3 installation, the projects in the repository requires no further packages. 
