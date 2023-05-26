@@ -53,7 +53,7 @@ class OptimalTaxationModelClass:
         sol.L       = np.NaN      # labor supply         range = [eps,24]
         sol.C       = np.NaN      # consumption          range = [eps,kappa+(1-tau)*wage*24]
 
-        # e. flags
+        # d. flags
         flag.found_sol_tau = False
         flag.found_sol_G   = False
         flag.found_sol_L   = False
@@ -133,7 +133,7 @@ class OptimalTaxationModelClass:
 
         return C
 
-    # maximize utility wrt. laobr
+    # maximize utility wrt. labor
     def solve_L(self,tau,G):
         """
         Optimal labor supply
