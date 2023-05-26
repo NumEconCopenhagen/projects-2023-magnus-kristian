@@ -9,5 +9,4 @@ This repository constains
 4. Exam project
 
 
-
-**Dependencies:** Apart from a standard Anaconda Python 3 installation, the projects in the repository requires no further packages. 
+**Dependencies:** Apart from a standard Anaconda Python 3 installation and packages used in this course the projects in the repository requires no further packages. 

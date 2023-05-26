@@ -1,6 +1,6 @@
 # Model analysis project
 
-**By:** Magnus, Kristian and Kristian
+**By:** Kristian Ebdrup, Kristian Vest Nielsen & Magnus Hjort
 
 Our project is titled **Cournot model** and is about the strategic interaction of N heterogenous firms that produce heterogenous goods.
 
