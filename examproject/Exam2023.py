@@ -40,20 +40,17 @@ class OptimalTaxationModelClass:
         par.alpha   = 0.5         # share parameter
         par.v       = 1/(2*16**2) # ??? disutility of labor
         par.epsilon = 1.0         # ??? of labor
-
         par.kappa   = 1.0         # consumer cash on hand
-
         par.wage    = 1.0         # real wage rate
-
         par.eps     = 1e-8        # tolerance level (lower bound)
 
         # c. choice variables
-        sol.tau     = np.NaN      # tax rate             range = [eps,1]
-        sol.G       = np.NaN      # government spending  range = [tau*wage*eps]
+        sol.tau     = np.NaN      # tax rate             range = [eps,1-eps]
+        sol.G       = np.NaN      # government spending  range = [eps*wage*eps,(1-eps)*wage*24]
         sol.L       = np.NaN      # labor supply         range = [eps,24]
         sol.C       = np.NaN      # consumption          range = [eps,kappa+(1-tau)*wage*24]
 
-        # d. flags
+        # e. flags
         flag.found_sol_tau = False
         flag.found_sol_G   = False
         flag.found_sol_L   = False
@@ -133,7 +130,7 @@ class OptimalTaxationModelClass:
 
         return C
 
-    # maximize utility wrt. labor
+    # maximize utility wrt. laobr
     def solve_L(self,tau,G):
         """
         Optimal labor supply
@@ -199,7 +196,7 @@ class OptimalTaxationModelClass:
         obj = lambda G: G - tau*wage*L(G)
 
         # c. solve
-        solution = optimize.root_scalar(obj,method='bisect',bracket=[tau*wage*eps,24*wage])
+        solution = optimize.root_scalar(obj,method='bisect',bracket=[eps*wage*eps,(1-eps)*wage*24])
 
         # d. balanced government spending
         sol = self.sol
@@ -242,7 +239,7 @@ class OptimalTaxationModelClass:
         obj = lambda tau: - u(tau)
 
         # c. solve
-        solution = optimize.minimize_scalar(obj,method='bounded',bounds=(eps,1))
+        solution = optimize.minimize_scalar(obj,method='bounded',bounds=(eps,1-eps))
 
         # d. optimal tax rate
         sol = self.sol
